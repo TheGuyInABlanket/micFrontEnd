@@ -2,11 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
 import { fetchMicData } from './utils/apiUtils'
 
+// TODO: Firm up convertToRowCol number shceme. Currently it adds 1
+// and then subtracts 1 before displaying.
 
 const GRID_ROWS = 6;
 const GRID_COLS = 5;
 
+function getBackgroundColor(status) {
+  var color = "white";
+  if (status == "Offline" || status == "No RF" || status == "No Audio") {
+    color = "red";
+  } else if (status == "Low Battery") {
+    color = "yellow";
+  } else if (status == "Good") {
+    color = "lightgreen";
+  }
+
+  return color;
+}
+
 function GridCell({ row, col, value, onClick }) {
+  const bgColor = getBackgroundColor(value.status);
+  const lines = (value?.text || "No mic data").split('\n');
+  // background: '#f9f9f9'
+  // {lines.map((line, i) => <div key={i}>{line}</div>)}
   return (
     <div
       style={{
@@ -16,11 +35,15 @@ function GridCell({ row, col, value, onClick }) {
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        background: '#f9f9f9'
+        background: bgColor
       }}
       onClick={() => onClick(row, col)}
     >
-      {value || `no mic data`}
+      <div style={{ display: 'flex', gap: '8px'}}>
+        <span>micnumber: {value?.micnumbe}r</span>
+        <span>ipaddress: {value?.ipaddress}</span>
+        <span>status: {value?.status}</span>
+      </div>
     </div>
   );
 }
@@ -36,11 +59,12 @@ export default function App() {
   const [selectedCell, setSelectedCell] = useState(null);
   const [micData, setMicData] = useState(null);
   const [grid, setGrid] = React.useState(
-    Array.from( {length: GRID_ROWS}, () => Array(GRID_COLS).fill("No mic data"))
+    Array.from( {length: GRID_ROWS}, () => Array(GRID_COLS).fill({text: "No mic data", status: null}))
   );
   const sheetRef = useRef(null);
 
   useEffect(() => {
+    // TODO: Call fetchMicData periodically, not just on refresh.
     fetchMicData().then(data => {
       setMicData(data);
       //console.log(micData)
@@ -58,23 +82,28 @@ export default function App() {
           const [row, col] = convertToRowCol(mic.micnumber)
           console.log(row)
           console.log(col);
-          const value = "micnumber: " + mic.micnumber + "\nipaddress: " + mic.ipaddress;
+          // TODO: Get proper formatting here.
+          const value = {
+            text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
+            status: mic.micstatus,
+            micnumber: mic.micnumber,
+            ipaddress: mic.ipaddress
+          }
           updated[row -1][col - 1] = value;
         }
-        //micData.forEach(({row, col, value }) => {
-        //  updated[row][col] = value;
-        //});
         return updated;
       });
     }
   }, [micData]);
 
   const handleCellClick = (row, col) => {
+    // This is what opens the details panel, it fires when a cell is clicked.
     setSelectedCell({ row, col });
     setPanelOpen(true);
   };
 
   const makeTheCall = () => {
+    // This is just a debug button. Eventually I want to tie the refresh to this while we get live updates working.
     alert('clicked');
   }
 
