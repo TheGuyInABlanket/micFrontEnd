@@ -1,5 +1,5 @@
 // The endpoint to get the mics
-const mic_api = "http://127.0.0.1:8000/test"
+const mic_api = "http://192.168.1.178:8000/test"
 
 export async function fetchMicData() {
     try{

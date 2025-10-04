@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
 import { fetchMicData } from './utils/apiUtils'
 
+import ToggleSwitch from './ToggleSwitch';
+
 // TODO: Firm up convertToRowCol number shceme. Currently it adds 1
 // and then subtracts 1 before displaying.
 
@@ -21,28 +23,58 @@ function getBackgroundColor(status) {
   return color;
 }
 
-function GridCell({ row, col, value, onClick }) {
+function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowToggle }) {
   const bgColor = getBackgroundColor(value.status);
-  const lines = (value?.text || "No mic data").split('\n');
+
   // background: '#f9f9f9'
   // {lines.map((line, i) => <div key={i}>{line}</div>)}
   return (
     <div
       style={{
         border: '1px solid #ccc',
-        minHeight: '50px',
-        display: 'flex',
+        display: 'inline-block', // allows cell to shrink/grow to fit content
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        background: bgColor
+        background: bgColor,
+        padding: micCheckEnabled ? 24 : 8,
+        minWidth: 135,
       }}
       onClick={() => onClick(row, col)}
     >
-      <div style={{ display: 'flex', gap: '8px'}}>
-        <span>micnumber: {value?.micnumbe}r</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px'}}>
+        <span>micnumber: {value?.micnumber}</span>
         <span>ipaddress: {value?.ipaddress}</span>
         <span>status: {value?.status}</span>
+        {micCheckEnabled && (
+          <>
+            {Array.from({ length: 4}).map((_, idx) => {
+              const actor = value.actors?.[idx];
+              return (
+                <label
+                  key={idx}
+                  style={{display: "flex", alignItems: "center", minHeight: 24}}
+                >
+                  
+                  <input
+                    style={{marginLeft: 8}}
+                    type="checkbox"
+                    checked={!!actor && actor.checked}
+                    disabled={!actor}
+                    onChange={e => {
+                      if (actor) {
+                        onMicCheckRowToggle(row, col, idx, !actor.checked);
+                      }
+                      e.stopPropagation();
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  />
+                  {actor ? actor.name : '\u00A0'}
+                </label>
+              )
+            })}
+          </>
+        )}
       </div>
     </div>
   );
@@ -62,6 +94,14 @@ export default function App() {
     Array.from( {length: GRID_ROWS}, () => Array(GRID_COLS).fill({text: "No mic data", status: null}))
   );
   const sheetRef = useRef(null);
+
+  const [micCheckEnabled, setMicCheckEnabled] = useState(false);
+
+  const handleMicCheckRowToggle = (row, col, micRow, checked) => {
+    //TODO: Make this do a POST to the API.
+    console.log(`Row ${row} Col ${col} - Mic Row ${micRow} is ${checked}`);
+    console.log(grid[row][col]);
+  };
 
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
@@ -87,7 +127,8 @@ export default function App() {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
             status: mic.micstatus,
             micnumber: mic.micnumber,
-            ipaddress: mic.ipaddress
+            ipaddress: mic.ipaddress,
+            actors: mic.actors
           }
           updated[row -1][col - 1] = value;
         }
@@ -102,11 +143,6 @@ export default function App() {
     setPanelOpen(true);
   };
 
-  const makeTheCall = () => {
-    // This is just a debug button. Eventually I want to tie the refresh to this while we get live updates working.
-    alert('clicked');
-  }
-
   return (
     // the parent div that holds all components
     <div style={{
@@ -115,13 +151,20 @@ export default function App() {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      background: "#eef2f7"
+      background: "#eef2f7",
+      position: "relative"
     }}>
-      <button onClick={makeTheCall}>call</button>
+      <ToggleSwitch
+        label="Mic Check"
+        checked={micCheckEnabled}
+        onChange={setMicCheckEnabled}
+      />
       <div style={{
+        maxHeight: "90vh",
+        overflowY: "auto",
         display: "grid",
-        gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-        gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
+        gridTemplateRows: `repeat(${GRID_ROWS}, auto)`,
+        gridTemplateColumns: `repeat(${GRID_COLS}, auto)`,
         gap: "8px"
       }}>
         {Array.from({ length: GRID_ROWS }).map((_, row) =>
@@ -131,6 +174,8 @@ export default function App() {
               row={row} col={col}
               value={grid[row][col]}
               onClick={handleCellClick} 
+              micCheckEnabled={micCheckEnabled}
+              onMicCheckRowToggle={handleMicCheckRowToggle}
               />
           )
         )}
