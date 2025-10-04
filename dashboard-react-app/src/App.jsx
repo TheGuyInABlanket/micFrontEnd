@@ -81,8 +81,8 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
 }
 
 function convertToRowCol(index) {
-  const row = (Math.floor((index - 1)/GRID_COLS)) + 1;
-  const col = ((index - 1) % GRID_ROWS) + 1;
+  const row = Math.floor((index - 1) / GRID_COLS);
+  const col = (index - 1 ) % GRID_COLS;
   return [row, col]
 }
 
@@ -130,7 +130,7 @@ export default function App() {
             ipaddress: mic.ipaddress,
             actors: mic.actors
           }
-          updated[row -1][col - 1] = value;
+          updated[row][col] = value;
         }
         return updated;
       });
