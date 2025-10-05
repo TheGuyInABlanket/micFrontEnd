@@ -145,6 +145,36 @@ export default function App() {
     }
   };
 
+  function makeDetailsContent(obj, indent = "") {
+    return Object.entries(obj)
+      .map(([key, value]) => {
+        if (key == "actors") {
+          var payload = "";
+          for (const actor in value) {
+            payload += `${indent}  name: ${actor.name} miccheck: ${actor.checked}\n`
+          }
+          return payload
+        }
+        else if (Array.isArray(value)) {
+          // Nested array of KVPs
+          return `${indent}${key}:\n${
+            value.map((item, idx) =>
+              typeof item === "object"
+                ? makeDetailsContent(item, indent + "  ")  // Recurse deeper
+                : `${indent}  [${idx}]: ${item}`
+            ).join('\n')
+          }`;
+        } else if (typeof value === "object" && value !== null) {
+          // Nested object
+          return `${indent}${key}:\n${makeDetailsContent(value, indent + "  ")}`;
+        } else {
+          // Primitive value
+          return `${indent}${key}: ${value}`;
+        }
+      })
+      .join('\n');
+  }
+
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
     fetchMicData().then(data => {
@@ -160,13 +190,15 @@ export default function App() {
         for(var x = 0; x < micData.length; x++) {
           const mic = micData[x];
           const [row, col] = convertToRowCol(mic.micnumber)
+          const detailsContent = makeDetailsContent(mic);
           // TODO: Get proper formatting here.
           const value = {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
             status: mic.micstatus,
             micnumber: mic.micnumber,
             ipaddress: mic.ipaddress,
-            actors: mic.actors
+            actors: mic.actors,
+            details: detailsContent
           }
           updated[row][col] = value;
         }
@@ -228,11 +260,11 @@ export default function App() {
       <Sheet.Container>
         <Sheet.Header />
         <Sheet.Content>
-          <div style={{ padding: "24px" }}>
-            <h2>Sensor Info</h2>
+          <div style={{ padding: "24px", maxHeight: "60vh", overflowY: "auto" }}>
+            <h2>Reciever Info</h2>
             {selectedCell &&
               <div>
-                <p>Cell: Row {selectedCell.row + 1}, Column {selectedCell.col + 1}</p>
+                <pre>{grid[selectedCell.row][selectedCell.col].details}</pre>
               </div>
             }
             <button onClick={() => setPanelOpen(false)}>Close</button>
