@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
-import { fetchMicData } from './utils/apiUtils'
+import { fetchMicData, postMicCheckStatus } from './utils/apiUtils'
 
 import ToggleSwitch from './ToggleSwitch';
 
@@ -87,6 +87,20 @@ function convertToRowCol(index) {
 }
 
 export default function App() {
+  const handleMicCheckRowToggle = async (row, col, micRow, checked) => {
+    //TODO: Make this do a POST to the API.
+    console.log(`Row ${row} Col ${col} - Mic Row ${micRow} is ${checked}`);
+    console.log(grid[row][col]);
+    try {
+      const mic = grid[row][col];
+      const payload = {micnumber: mic.micnumber, name: mic.actors[micRow].name, miccheck: checked};
+      console.log(payload);
+      const result = await postMicCheckStatus(payload);
+      console.log("Mic check result: ", result);
+    } catch (error) {
+      console.log("Error calling mic check: ", error);
+    }
+  };
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
   const [micData, setMicData] = useState(null);
@@ -97,11 +111,7 @@ export default function App() {
 
   const [micCheckEnabled, setMicCheckEnabled] = useState(false);
 
-  const handleMicCheckRowToggle = (row, col, micRow, checked) => {
-    //TODO: Make this do a POST to the API.
-    console.log(`Row ${row} Col ${col} - Mic Row ${micRow} is ${checked}`);
-    console.log(grid[row][col]);
-  };
+  
 
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.

@@ -26,3 +26,17 @@ export async function startMicData() {
         console.error('API error: ', error)
     }
 }
+
+export async function postMicCheckStatus(jsonObj) {
+    const response = await fetch(mic_api + "/mics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json"},
+        body: JSON.stringify(jsonObj),
+    });
+    if (!response.ok) {
+        console.error('API response was not okay');
+        return false;
+    }
+
+    return response.json();
+}
