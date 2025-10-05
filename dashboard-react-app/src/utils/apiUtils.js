@@ -40,3 +40,17 @@ export async function postMicCheckStatus(jsonObj) {
 
     return response.json();
 }
+
+export async function clearMicCheckStatus() {
+    const response = await fetch(mic_api + "/mics", {
+        method: "POST",
+        headers: { "Content-Type": "application/json"},
+        body: null,
+    });
+        if (!response.ok) {
+        console.error('API response was not okay');
+        return false;
+    }
+
+    return response.json();
+}

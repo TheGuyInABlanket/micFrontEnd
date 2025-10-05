@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
-import { fetchMicData, postMicCheckStatus } from './utils/apiUtils'
+import { fetchMicData, postMicCheckStatus, clearMicCheckStatus } from './utils/apiUtils'
 
 import ToggleSwitch from './ToggleSwitch';
 
@@ -23,8 +23,39 @@ function getBackgroundColor(status) {
   return color;
 }
 
+function getActorColor(actors) {
+  var allCheck = true;
+  for (const element of actors) {
+    if (!element.checked) {
+      allCheck = false;
+      break;
+    }
+  }
+  var color;
+  if (allCheck) {
+    color = "green"
+  } else {
+    color = "red"
+  } 
+  return color;
+}
+
+function getComboBackgroundColor(status, actors) {
+  const topColor = getBackgroundColor(status);
+  const bottomColor = getActorColor(actors);
+
+  const colorPayload = `linear-gradient(to bottom, ${topColor} 50%, ${bottomColor} 50%)`; 
+
+  return colorPayload;
+}
+
 function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowToggle }) {
-  const bgColor = getBackgroundColor(value.status);
+  var bgColor;
+  if (micCheckEnabled) {
+    bgColor = getComboBackgroundColor(value.status, value.actors);
+  } else {
+    bgColor = getBackgroundColor(value.status);
+  }
 
   // background: '#f9f9f9'
   // {lines.map((line, i) => <div key={i}>{line}</div>)}
@@ -87,6 +118,16 @@ function convertToRowCol(index) {
 }
 
 export default function App() {
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [selectedCell, setSelectedCell] = useState(null);
+  const [micData, setMicData] = useState(null);
+  const [grid, setGrid] = React.useState(
+    Array.from( {length: GRID_ROWS}, () => Array(GRID_COLS).fill({text: "No mic data", status: null}))
+  );
+  const sheetRef = useRef(null);
+
+  const [micCheckEnabled, setMicCheckEnabled] = useState(false);
+
   const handleMicCheckRowToggle = async (row, col, micRow, checked) => {
     //TODO: Make this do a POST to the API.
     try {
@@ -103,17 +144,6 @@ export default function App() {
       console.log("Error calling mic check: ", error);
     }
   };
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [selectedCell, setSelectedCell] = useState(null);
-  const [micData, setMicData] = useState(null);
-  const [grid, setGrid] = React.useState(
-    Array.from( {length: GRID_ROWS}, () => Array(GRID_COLS).fill({text: "No mic data", status: null}))
-  );
-  const sheetRef = useRef(null);
-
-  const [micCheckEnabled, setMicCheckEnabled] = useState(false);
-
-  
 
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
