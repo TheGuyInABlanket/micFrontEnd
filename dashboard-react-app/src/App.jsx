@@ -89,14 +89,16 @@ function convertToRowCol(index) {
 export default function App() {
   const handleMicCheckRowToggle = async (row, col, micRow, checked) => {
     //TODO: Make this do a POST to the API.
-    console.log(`Row ${row} Col ${col} - Mic Row ${micRow} is ${checked}`);
-    console.log(grid[row][col]);
     try {
       const mic = grid[row][col];
       const payload = {micnumber: mic.micnumber, name: mic.actors[micRow].name, miccheck: checked};
       console.log(payload);
       const result = await postMicCheckStatus(payload);
       console.log("Mic check result: ", result);
+
+      const newData = await fetchMicData();
+      setMicData(newData);
+
     } catch (error) {
       console.log("Error calling mic check: ", error);
     }
@@ -125,13 +127,9 @@ export default function App() {
     if (micData && micData.length > 0) {
       setGrid(prev => {
         const updated = prev.map(rowArr => [...rowArr]);
-        console.log("2nd use effect");
-        console.log(micData.length);
         for(var x = 0; x < micData.length; x++) {
           const mic = micData[x];
           const [row, col] = convertToRowCol(mic.micnumber)
-          console.log(row)
-          console.log(col);
           // TODO: Get proper formatting here.
           const value = {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
