@@ -12,8 +12,10 @@ const GRID_COLS = 5;
 
 function getBackgroundColor(status) {
   var color = "white";
-  if (status == "Offline" || status == "No RF" || status == "No Audio") {
+  if (status == "Offline" || status == "No RF") {
     color = "red";
+  } else if (status == "No Audio") {
+    color = "blue";
   } else if (status == "Low Battery") {
     color = "yellow";
   } else if (status == "Good") {
@@ -51,7 +53,7 @@ function getComboBackgroundColor(status, actors) {
 
 function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowToggle }) {
   var bgColor;
-  if (micCheckEnabled) {
+  if (micCheckEnabled && value.text != "No mic data") {
     bgColor = getComboBackgroundColor(value.status, value.actors);
   } else {
     bgColor = getBackgroundColor(value.status);
@@ -74,9 +76,9 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
       onClick={() => onClick(row, col)}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px'}}>
-        <span>micnumber: {value?.micnumber}</span>
-        <span>ipaddress: {value?.ipaddress}</span>
-        <span>status: {value?.status}</span>
+        <span>Mic #: {value?.micnumber}</span>
+
+        <span>Status: {value?.status}</span>
         {micCheckEnabled && (
           <>
             {Array.from({ length: 4}).map((_, idx) => {
@@ -177,11 +179,16 @@ export default function App() {
 
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
-    fetchMicData().then(data => {
-      setMicData(data);
-      //console.log(micData)
-    });
-  }, [])
+      let intervalidID = setInterval(() => {
+        fetchMicData().then(data => {
+          setMicData(data);
+          //console.log(micData)
+        });
+      }, 1000);
+
+      return () => clearInterval(intervalidID);
+    
+    }, [])
 
   useEffect(() => {
     if (micData && micData.length > 0) {
