@@ -87,7 +87,7 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
   if (micCheckEnabled && value.text != "No mic data") {
     bgColor = getComboBackgroundColor(value.status, value.actors);
   } else {
-    bgColor = getBackgroundColor(value.status, value.noAudioCount);
+    bgColor = getBackgroundColor(value.status);
   }
 
   // background: '#f9f9f9'
