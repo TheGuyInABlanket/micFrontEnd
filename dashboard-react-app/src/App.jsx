@@ -10,12 +10,17 @@ import ToggleSwitch from './ToggleSwitch';
 const GRID_ROWS = 6;
 const GRID_COLS = 5;
 
+// The mininum number of 'no audio' signals to change color
+const noAudioBufferMax = 10;
+
+const noAudioStatus = "No Audio"
+
 function getBackgroundColor(status) {
   var color = "white";
   if (status == "Offline" || status == "No RF") {
-    color = "red";
-  } else if (status == "No Audio") {
-    color = "blue";
+    color = "LightCoral";
+  } else if (status == noAudioStatus) {
+    color = "skyblue";
   } else if (status == "Low Battery") {
     color = "yellow";
   } else if (status == "Good") {
@@ -23,6 +28,32 @@ function getBackgroundColor(status) {
   }
 
   return color;
+}
+
+function getNewBackgroundColor(status, noAudios, previousStatus) {
+  var color = "white";
+  var newStatus = status;
+  var statusLabel = status;
+  if(status == noAudioStatus) {
+    if(previousStatus == "Low Battery" || previousStatus == "Good") {
+      noAudios += 1;
+      if (noAudios >= noAudioBufferMax) {
+        color = getBackgroundColor(status);
+      } else {
+        color = getBackgroundColor(previousStatus);
+        newStatus = previousStatus;
+        statusLabel = `${status} (${noAudios}s)`
+      }
+    } else {
+      noAudios = 0;
+      color = getBackgroundColor(status);
+    }
+  } else {
+    noAudios = 0;
+    color = getBackgroundColor(status);
+  }
+
+  return [color, newStatus, statusLabel]
 }
 
 function getActorColor(actors) {
@@ -78,7 +109,7 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px'}}>
         <span>Mic #: {value?.micnumber}</span>
 
-        <span>Status: {value?.status}</span>
+        <span>Status: {value?.statusLabel}</span>
         {micCheckEnabled && (
           <>
             {Array.from({ length: 4}).map((_, idx) => {
@@ -177,6 +208,29 @@ export default function App() {
       .join('\n');
   }
 
+  function handleNoAudios(oldStatus, newStatus, audioCount) {
+    var finalStatus = newStatus;
+    var statusLabel = finalStatus;
+    if(newStatus == noAudioStatus) {
+      if(oldStatus == "Low Battery" || oldStatus == "Good") {
+        audioCount += 1;
+        if (audioCount >= noAudioBufferMax) {
+          finalStatus = newStatus;
+          statusLabel = newStatus;
+        } else {
+          finalStatus = oldStatus;
+          statusLabel = `${newStatus} (${audioCount}s)`
+        }
+      } else {
+        audioCount = 0;
+      }
+    } else {
+      audioCount = 0;
+    }
+
+    return [finalStatus, statusLabel, audioCount];
+  }
+
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
       let intervalidID = setInterval(() => {
@@ -199,13 +253,29 @@ export default function App() {
           const [row, col] = convertToRowCol(mic.micnumber)
           const detailsContent = makeDetailsContent(mic);
           // TODO: Get proper formatting here.
+
+          var previousStatus = null;
+          var audioCount = 0;
+          const prevValue = prev[row][col];
+          if(prevValue && Object.hasOwn(prevValue, 'status')) {
+            previousStatus = prevValue.status;
+          }
+          if(prevValue && Object.hasOwn(prevValue, 'noAudioCount')) {
+            audioCount = prevValue.noAudioCount;
+          }
+
+          const [finalStatus, statusLabel, finalCount] = handleNoAudios(previousStatus, mic.micstatus, audioCount);
+
           const value = {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
-            status: mic.micstatus,
+            status: finalStatus,
+            statusLabel: statusLabel,
             micnumber: mic.micnumber,
             ipaddress: mic.ipaddress,
             actors: mic.actors,
-            details: detailsContent
+            details: detailsContent,
+            noAudioCount: finalCount,
+            previousStatus: previousStatus
           }
           updated[row][col] = value;
         }
