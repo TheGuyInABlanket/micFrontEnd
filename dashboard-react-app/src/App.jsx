@@ -102,7 +102,7 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
         cursor: 'pointer',
         background: bgColor,
         padding: micCheckEnabled ? 24 : 8,
-        minWidth: 135,
+        minWidth: 160,
       }}
       onClick={() => onClick(row, col)}
     >
@@ -348,7 +348,7 @@ export default function App() {
           </div>
         </Sheet.Content>
       </Sheet.Container>
-      <Sheet.Backdrop />
+      <Sheet.Backdrop onClick={() => setPanelOpen(false)}/>
     </Sheet>
 
 
