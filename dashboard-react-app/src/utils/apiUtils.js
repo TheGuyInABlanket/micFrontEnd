@@ -1,5 +1,5 @@
 // The endpoint to get the mics
-const mic_api = "http://192.168.1.158:5001"
+const mic_api = "http://localhost:5001"
 
 export async function fetchMicData() {
     try{
@@ -42,7 +42,7 @@ export async function postMicCheckStatus(jsonObj) {
 }
 
 export async function clearMicCheckStatus() {
-    const response = await fetch(mic_api + "/mics", {
+    const response = await fetch(mic_api + "/clearmiccheck", {
         method: "POST",
         headers: { "Content-Type": "application/json"},
         body: null,
