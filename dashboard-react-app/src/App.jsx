@@ -39,7 +39,7 @@ function getActorColor(actors) {
   if (allCheck) {
     color = "green"
   } else {
-    color = "red"
+    color = "lightcoral"
   }
   return color;
 }
