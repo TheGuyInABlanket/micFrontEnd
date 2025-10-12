@@ -168,7 +168,7 @@ export default function App() {
     return Object.entries(obj)
       .map(([key, value]) => {
         if (key == "actors") {
-          var payload = "";
+          var payload = "actors:\n";
           for (const index in value) {
             const actor = value[index];
             payload += `${indent}  name: ${actor.name} miccheck: ${actor.checked}\n`
