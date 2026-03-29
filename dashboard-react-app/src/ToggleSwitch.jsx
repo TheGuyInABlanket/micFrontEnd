@@ -1,7 +1,7 @@
 
 import React  from "react";
 
-export default function ToggleSwitch({label, checked, onChange, clickHandler}) {
+export default function ToggleSwitch({label, checked, onChange, clickHandler, castHandler}) {
     return (
         <div>
             <label style={{
@@ -20,6 +20,7 @@ export default function ToggleSwitch({label, checked, onChange, clickHandler}) {
                     style={{transform: "scale(1.3)"}}
                 />
                 <button type="button" onClick={clickHandler}>Clear All</button>
+                <button type="button" onClick={castHandler}>Cast List</button>
             </label>
             
         </div>
