@@ -111,12 +111,12 @@ function getTheaterMixComboBackgroundColor(apiStatus, theaterMixStatus, actors) 
 function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
   const topColor = "white";
   const midLeftColor = getMicColor(value.status);
-  console.log("debug")
-  console.log(value);
   const midRightColor = getOperationStatusColor(value.operationalstatus);
-  const bottomColor = getActorColor(value.actors);
   const inMicCheckMode = mode === "Mic Check";
   const inEditCastMode = mode === "Edit Cast";
+  const bottomColor = inMicCheckMode
+    ? getActorColor(value.actors)
+    : "white";
 
   return (
     <div
@@ -138,82 +138,122 @@ function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
         }}
       >
         <div style={{ fontWeight: "bold" }}>Mic #{value?.micnumber}</div>
-        <div>Status: {value?.statusLabel}</div>
       </div>
 
       {/* Middle section: left/right split */}
-      {inMicCheckMode && (
-        <div
-          style={{
-            display: "flex",
-            height: 40, // adjust as needed
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              background: midLeftColor,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-            }}
-          >
-            {/* LEFT mid label */}
-            {value.status}
-          </div>
-          <div
-            style={{
-              flex: 1,
-              background: midRightColor,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 12,
-            }}
-          >
-            {/* RIGHT mid label */}
-            {value.operationalstatus}
-          </div>
-        </div>
-      )}
-
-      {/* Bottom section */}
       <div
         style={{
-          background: bottomColor,
-          padding: 8,
+          display: "flex",
+          height: 40, // adjust as needed
         }}
       >
-        {/* Bottom label */}
-        <div style={{ fontWeight: "bold", marginBottom: 4 }}>Actor Assignments</div>
-
-        {inMicCheckMode &&
-          Array.from({ length: 4 }).map((_, idx) => {
-            const actor = value.actors?.[idx];
-            return (
-              <label
-                key={idx}
-                style={{ display: "flex", alignItems: "center", minHeight: 24 }}
-              >
-                <input
-                  style={{ marginLeft: 8 }}
-                  type="checkbox"
-                  checked={!!actor && actor.checked}
-                  disabled={!actor}
-                  onChange={e => {
-                    if (actor) {
-                      onMicCheckRowToggle(row, col, idx, !actor.checked);
-                    }
-                    e.stopPropagation();
-                  }}
-                  onClick={e => e.stopPropagation()}
-                />
-                {actor ? actor.name : "\u00A0"}
-              </label>
-            );
-          })}
+        <div
+          style={{
+            flex: 1,
+            background: midLeftColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            border: "1px solid black",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* LEFT mid label */}
+          {value.status}
+        </div>
+        <div
+          style={{
+            flex: 1,
+            background: midRightColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            border: "1px solid black",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* RIGHT mid label */}
+          {value.operationalstatus}
+        </div>
       </div>
+
+      {/* Bottom section for mic checks*/}
+      {(inMicCheckMode || inEditCastMode) && (
+        <div
+          style={{
+            background: bottomColor,
+            padding: 8,
+          }}
+        >
+          {/* Bottom label */}
+          {inMicCheckMode && (
+            <div style={{ fontWeight: "bold", marginBottom: 4 }}>Actor Assignments</div>
+          )}
+
+          {inMicCheckMode &&
+            Array.from({ length: 4 }).map((_, idx) => {
+              const actor = value.actors?.[idx];
+              return (
+                <label
+                  key={idx}
+                  style={{ display: "flex", alignItems: "center", minHeight: 24 }}
+                >
+                  <input
+                    style={{ marginLeft: 8 }}
+                    type="checkbox"
+                    checked={!!actor && actor.checked}
+                    disabled={!actor}
+                    onChange={e => {
+                      if (actor) {
+                        onMicCheckRowToggle(row, col, idx, !actor.checked);
+                      }
+                      e.stopPropagation();
+                    }}
+                    onClick={e => e.stopPropagation()}
+                  />
+                  {actor ? actor.name : "\u00A0"}
+                </label>
+              );
+            })}
+
+          {/* Bottom label */}
+          {inEditCastMode && (
+            <div style={{ fontWeight: "bold", marginBottom: 4 }}>Actor Assignments</div>
+          )}
+
+          {inEditCastMode &&
+            Array.from({ length: 4 }).map((_, idx) => {
+              const actor = value.actors?.[idx];
+              return (
+                <div
+                  key={idx}
+                  style={{ display: "flex", alignItems: "center", minHeight: 24 }}
+                >
+                  <input
+                    type="text"
+                    style={{ marginLeft: 8, flex: 1 }}
+                    value={actor ? actor.name : ""}
+                    onChange={(e) => {
+                      // For now just local update; you can later wire this to a POST
+                      if (!actor) return;
+                      const newName = e.target.value;
+
+                      // shallow-copy grid data at higher level later if you want to persist
+                      const updatedActor = { ...actor, name: newName };
+                      const updatedActors = [...(value.actors || [])];
+                      updatedActors[idx] = updatedActor;
+                      // If you want to push this up, add a callback like onActorNameChange
+                      // and call it here with (row, col, idx, newName)
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              );
+            })}
+        </div>
+      )}
     </div>
   );
 }
@@ -229,6 +269,7 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
   const [micData, setMicData] = useState(null);
+  const [title, setTitle] = useState("");
   const [grid, setGrid] = React.useState(
     Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill({ text: "No mic data", status: null, operationalstatus: null }))
   );
@@ -314,6 +355,12 @@ export default function App() {
 
   useEffect(() => {
     if (micData && micData.length > 0) {
+      const first = micData[0];
+      console.log("debug title");
+      console.log(first.showTag);
+      if (first && first.showTag) {
+        setTitle(first.showTag);
+      }
       setGrid(prev => {
         const updated = prev.map(rowArr => [...rowArr]);
         for (var x = 0; x < micData.length; x++) {
@@ -359,6 +406,13 @@ export default function App() {
     <div>
       <table style={{ height: "100vh", width: "100vw", background: "#eef2f7" }}>
         <tbody>
+          <tr>
+            <td style={{ textAlign: "center", paddingTop: 16 }}>
+              <h1 style={{ margin: 0 }}>
+                {title || "Loading…"}
+              </h1>
+            </td>
+          </tr>
           <tr>
             <td style={{ textAlign: "center", padding: 24 }}>
               <ModeSelector value={mode} onChange={setMode} />

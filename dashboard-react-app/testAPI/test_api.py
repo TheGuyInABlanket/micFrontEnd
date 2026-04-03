@@ -20,6 +20,7 @@ app.add_middleware(
 data = [
     {
         'micnumber': '1',
+        'showTag': 'Frozen',
         'ipaddress': '192.168.1.167',
         'tcpstatus': 'OFFLINE',
         'micstatus': 'Offline',
