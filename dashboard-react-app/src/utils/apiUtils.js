@@ -15,6 +15,20 @@ export async function fetchMicData() {
     }
 }
 
+export async function fetchShowData() {
+    try{
+        const response = await fetch(mic_api + "/title");
+        if(!response.ok) {
+            throw new Error(`HTTP error: ${response.status}`)
+        }
+
+        const dataObj = await response.json();
+        return dataObj;
+    } catch (error) {
+        console.error('API error: ', error)
+    }
+}
+
 export async function startMicData() {
     try{
         const response = await fetch(mic_api + "/start");

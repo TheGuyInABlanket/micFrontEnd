@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
-import { fetchMicData, postMicCheckStatus, clearMicCheckStatus } from './utils/apiUtils'
+import { fetchMicData, fetchShowData, postMicCheckStatus, clearMicCheckStatus } from './utils/apiUtils'
 
 import ToggleSwitch from './ToggleSwitch';
 import ModeSelector from './ModeSelector';
@@ -34,22 +34,27 @@ function getOperationStatusColor(status) {
   const audiolive = "yellow"
   const noaudio = "blue"
   const overdrive = "red"
-  const other = "black"
+  const other = "#E1BEE7"
   var color = "white"
-  if (!status) {
-    color = other
-  } else if (status == "audiolive") {
-    color = audiolive
-  } else if (status == "noaudiolive") {
+  var msg = ""
+
+  if (status === 7) {
     color = noaudiolive
-  } else if (status == "noaudio") {
+    msg = "Muted"
+  } else if (status === 4) {
+    color = audiolive
+    msg = "Live"
+  } else if (status === 5) {
     color = noaudio
-  } else if (status == "overdrive") {
+    msg = "No Audio"
+  } else if (status === 1) {
     color = overdrive
+    msg = "Overdrive"
   } else {
     color = other
+    msg = "Unknown"
   }
-  return color
+  return [color, msg]
 }
 
 function getActorColor(actors) {
@@ -111,7 +116,7 @@ function getTheaterMixComboBackgroundColor(apiStatus, theaterMixStatus, actors) 
 function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
   const topColor = "white";
   const midLeftColor = getMicColor(value.status);
-  const midRightColor = getOperationStatusColor(value.operationalstatus);
+  const [midRightColor, midRightMsg] = getOperationStatusColor(value.opstatus);
   const inMicCheckMode = mode === "Mic Check";
   const inEditCastMode = mode === "Edit Cast";
   const bottomColor = inMicCheckMode
@@ -175,7 +180,7 @@ function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
           }}
         >
           {/* RIGHT mid label */}
-          {value.operationalstatus}
+          {midRightMsg}
         </div>
       </div>
 
@@ -269,9 +274,10 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
   const [micData, setMicData] = useState(null);
+  const [showData, setShowData] = useState(null);
   const [title, setTitle] = useState("");
   const [grid, setGrid] = React.useState(
-    Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill({ text: "No mic data", status: null, operationalstatus: null }))
+    Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill({ text: "No mic data", status: null, opstatus: null }))
   );
   const sheetRef = useRef(null);
 
@@ -283,9 +289,7 @@ export default function App() {
     try {
       const mic = grid[row][col];
       const payload = { micnumber: mic.micnumber, name: mic.actors[micRow].name, miccheck: checked };
-      console.log(payload);
       const result = await postMicCheckStatus(payload);
-      console.log("Mic check result: ", result);
 
       const newData = await fetchMicData();
       setMicData(newData);
@@ -354,13 +358,21 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    let intervalidID = setInterval(() => {
+      fetchShowData().then(data => {
+        const name = data?.[0]?.activeshowname ?? "Unknown show";
+        setTitle(name)
+      })
+    }, 5000);
+    return () => clearInterval(intervalidID);
+  }, []);
+
+  useEffect(() => {
     if (micData && micData.length > 0) {
       const first = micData[0];
-      console.log("debug title");
-      console.log(first.showTag);
-      if (first && first.showTag) {
-        setTitle(first.showTag);
-      }
+      //if (first && first.showTag) {
+      // setTitle(first.showTag);
+      //}
       setGrid(prev => {
         const updated = prev.map(rowArr => [...rowArr]);
         for (var x = 0; x < micData.length; x++) {
@@ -378,7 +390,7 @@ export default function App() {
           const value = {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
             status: mic.micstatus,
-            operationalstatus: mic.operationalstatus,
+            opstatus: mic.opstatus,
             statusLabel: mic.micstatus,
             micnumber: mic.micnumber,
             ipaddress: mic.ipaddress,
