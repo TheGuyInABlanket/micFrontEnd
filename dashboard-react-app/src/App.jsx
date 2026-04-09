@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sheet } from 'react-modal-sheet';
-import { fetchMicData, postMicCheckStatus, clearMicCheckStatus } from './utils/apiUtils'
+import { fetchMicData, fetchShowData, postMicCheckStatus, clearMicCheckStatus } from './utils/apiUtils'
 
 import ToggleSwitch from './ToggleSwitch';
+import ModeSelector from './ModeSelector';
 
 const GRID_ROWS = 6;
 const GRID_COLS = 5;
@@ -12,12 +13,13 @@ const noAudioBufferMax = 10;
 
 const noAudioStatus = "No Audio"
 
-function getBackgroundColor(status) {
+function getMicColor(status) {
   var color = "white";
   if (status == "Offline" || status == "No RF") {
     color = "LightCoral";
-  } else if (status == noAudioStatus) {
-    color = "skyblue";
+    // Removing no audio status
+    //} //else if (status == noAudioStatus) {
+    //color = "skyblue";
   } else if (status == "Low Battery") {
     color = "yellow";
   } else if (status == "Good") {
@@ -27,7 +29,43 @@ function getBackgroundColor(status) {
   return color;
 }
 
+function getOperationStatusColor(status) {
+  const noaudiolive = "white"
+  const audiolive = "yellow"
+  const noaudio = "blue"
+  const overdrive = "red"
+  const other = "#E1BEE7"
+  var color = "white"
+  var msg = ""
+
+  if (status === 7) {
+    color = noaudiolive
+    msg = "Muted"
+  } else if (status === 4) {
+    color = audiolive
+    msg = "Live"
+  } else if (status === 5) {
+    color = noaudio
+    msg = "No Audio"
+  } else if (status === 1) {
+    color = overdrive
+    msg = "Overdrive"
+  } else {
+    color = other
+    msg = "Unknown"
+  }
+  return [color, msg]
+}
+
 function getActorColor(actors) {
+  const goodColor = "green"
+  const badColor = "lightcoral"
+  if (!Array.isArray(actors) || actors.length == 0) {
+    // goes to the default if 
+    return badColor
+  }
+
+
   var allCheck = true;
   for (const element of actors) {
     if (!element.checked) {
@@ -37,15 +75,15 @@ function getActorColor(actors) {
   }
   var color;
   if (allCheck) {
-    color = "green"
+    color = goodColor
   } else {
-    color = "lightcoral"
+    color = badColor
   }
   return color;
 }
 
 function getComboBackgroundColor(status, actors) {
-  const topColor = getBackgroundColor(status);
+  const topColor = getMicColor(status);
   const bottomColor = getActorColor(actors);
 
   const colorPayload = `linear-gradient(to bottom, ${topColor} 35%, ${bottomColor} 35%)`;
@@ -53,44 +91,120 @@ function getComboBackgroundColor(status, actors) {
   return colorPayload;
 }
 
-function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowToggle }) {
-  var bgColor;
-  if (micCheckEnabled && value.text != "No mic data") {
-    bgColor = getComboBackgroundColor(value.status, value.actors);
-  } else {
-    bgColor = getBackgroundColor(value.status);
-  }
+function getTheaterMixComboBackgroundColor(apiStatus, theaterMixStatus, actors) {
+  const topColor = "white";
+  const midLeftColor = getMicColor(apiStatus);
+  const midRightColor = "green";
+  const bottomColor = getActorColor(actors);
 
-  // background: '#f9f9f9'
-  // {lines.map((line, i) => <div key={i}>{line}</div>)}
+  return `
+    linear-gradient(to right,
+      ${midLeftColor} 50%,
+      ${midRightColor} 50%
+    ) 0 15% / 100% 25% no-repeat,
+    linear-gradient(to bottom,
+      ${topColor} 15%,
+      ${topColor} 15%,
+      transparent 15%,
+      transparent 35%,
+      ${bottomColor} 35%
+    ) 0 0 / 100% 100% no-repeat
+  `;
+
+}
+
+function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
+  const topColor = "white";
+  const midLeftColor = getMicColor(value.status);
+  const [midRightColor, midRightMsg] = getOperationStatusColor(value.opstatus);
+  const inMicCheckMode = mode === "Mic Check";
+  const inEditCastMode = mode === "Edit Cast";
+  const bottomColor = inMicCheckMode
+    ? getActorColor(value.actors)
+    : "white";
+
   return (
     <div
       style={{
-        border: '1px solid #ccc',
-        display: 'inline-block', // allows cell to shrink/grow to fit content
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        background: bgColor,
-        padding: micCheckEnabled ? 24 : 8,
+        border: "1px solid #ccc",
+        display: "inline-block",
+        cursor: "pointer",
+        padding: 0,
         minWidth: 160,
+        overflow: "hidden",
       }}
       onClick={() => onClick(row, col)}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <span>Mic #: {value?.micnumber}</span>
+      {/* Top section */}
+      <div
+        style={{
+          background: topColor,
+          padding: 8,
+        }}
+      >
+        <div style={{ fontWeight: "bold" }}>Mic #{value?.micnumber}</div>
+      </div>
 
-        <span>Status: {value?.statusLabel}</span>
-        {micCheckEnabled && (
-          <>
-            {Array.from({ length: 4 }).map((_, idx) => {
+      {/* Middle section: left/right split */}
+      <div
+        style={{
+          display: "flex",
+          height: 40, // adjust as needed
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            background: midLeftColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            border: "1px solid black",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* LEFT mid label */}
+          {value.status}
+        </div>
+        <div
+          style={{
+            flex: 1,
+            background: midRightColor,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            border: "1px solid black",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* RIGHT mid label */}
+          {midRightMsg}
+        </div>
+      </div>
+
+      {/* Bottom section for mic checks*/}
+      {(inMicCheckMode || inEditCastMode) && (
+        <div
+          style={{
+            background: bottomColor,
+            padding: 8,
+          }}
+        >
+          {/* Bottom label */}
+          {inMicCheckMode && (
+            <div style={{ fontWeight: "bold", marginBottom: 4 }}>Actor Assignments</div>
+          )}
+
+          {inMicCheckMode &&
+            Array.from({ length: 4 }).map((_, idx) => {
               const actor = value.actors?.[idx];
               return (
                 <label
                   key={idx}
                   style={{ display: "flex", alignItems: "center", minHeight: 24 }}
                 >
-
                   <input
                     style={{ marginLeft: 8 }}
                     type="checkbox"
@@ -104,16 +218,51 @@ function GridCell({ row, col, value, onClick, micCheckEnabled, onMicCheckRowTogg
                     }}
                     onClick={e => e.stopPropagation()}
                   />
-                  {actor ? actor.name : '\u00A0'}
+                  {actor ? actor.name : "\u00A0"}
                 </label>
-              )
+              );
             })}
-          </>
-        )}
-      </div>
+
+          {/* Bottom label */}
+          {inEditCastMode && (
+            <div style={{ fontWeight: "bold", marginBottom: 4 }}>Actor Assignments</div>
+          )}
+
+          {inEditCastMode &&
+            Array.from({ length: 4 }).map((_, idx) => {
+              const actor = value.actors?.[idx];
+              return (
+                <div
+                  key={idx}
+                  style={{ display: "flex", alignItems: "center", minHeight: 24 }}
+                >
+                  <input
+                    type="text"
+                    style={{ marginLeft: 8, flex: 1 }}
+                    value={actor ? actor.name : ""}
+                    onChange={(e) => {
+                      // For now just local update; you can later wire this to a POST
+                      if (!actor) return;
+                      const newName = e.target.value;
+
+                      // shallow-copy grid data at higher level later if you want to persist
+                      const updatedActor = { ...actor, name: newName };
+                      const updatedActors = [...(value.actors || [])];
+                      updatedActors[idx] = updatedActor;
+                      // If you want to push this up, add a callback like onActorNameChange
+                      // and call it here with (row, col, idx, newName)
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              );
+            })}
+        </div>
+      )}
     </div>
   );
 }
+
 
 function convertToRowCol(index) {
   const row = Math.floor((index - 1) / GRID_COLS);
@@ -125,21 +274,22 @@ export default function App() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState(null);
   const [micData, setMicData] = useState(null);
+  const [showData, setShowData] = useState(null);
+  const [title, setTitle] = useState("");
   const [grid, setGrid] = React.useState(
-    Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill({ text: "No mic data", status: null }))
+    Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill({ text: "No mic data", status: null, opstatus: null }))
   );
   const sheetRef = useRef(null);
 
-  const [micCheckEnabled, setMicCheckEnabled] = useState(false);
+  // const [micCheckEnabled, setMicCheckEnabled] = useState(false);
+  const [mode, setMode] = useState("Monitor");
 
   const handleMicCheckRowToggle = async (row, col, micRow, checked) => {
     //TODO: Make this do a POST to the API.
     try {
       const mic = grid[row][col];
       const payload = { micnumber: mic.micnumber, name: mic.actors[micRow].name, miccheck: checked };
-      console.log(payload);
       const result = await postMicCheckStatus(payload);
-      console.log("Mic check result: ", result);
 
       const newData = await fetchMicData();
       setMicData(newData);
@@ -150,19 +300,19 @@ export default function App() {
   };
 
   const handleClearAll = async () => {
-      console.log("handle clear all");
-      try {
-        const result = await clearMicCheckStatus();
-        console.log("Clear all result: ", result);
+    console.log("handle clear all");
+    try {
+      const result = await clearMicCheckStatus();
+      console.log("Clear all result: ", result);
 
-        const newData = await fetchMicData();
-        setMicData(newData);
-      } catch (error) {
-        console.log("Error clearing all: ", error);
-      }
+      const newData = await fetchMicData();
+      setMicData(newData);
+    } catch (error) {
+      console.log("Error clearing all: ", error);
     }
+  }
 
-  
+
 
   function makeDetailsContent(obj, indent = "") {
     return Object.entries(obj)
@@ -194,29 +344,6 @@ export default function App() {
       .join('\n');
   }
 
-  function handleNoAudios(oldStatus, newStatus, audioCount) {
-    var finalStatus = newStatus;
-    var statusLabel = finalStatus;
-    if (newStatus == noAudioStatus) {
-      if (oldStatus == "Low Battery" || oldStatus == "Good") {
-        audioCount += 1;
-        if (audioCount >= noAudioBufferMax) {
-          finalStatus = newStatus;
-          statusLabel = newStatus;
-        } else {
-          finalStatus = oldStatus;
-          statusLabel = `${newStatus} (${audioCount}s)`
-        }
-      } else {
-        audioCount = 0;
-      }
-    } else {
-      audioCount = 0;
-    }
-
-    return [finalStatus, statusLabel, audioCount];
-  }
-
   useEffect(() => {
     // TODO: Call fetchMicData periodically, not just on refresh.
     let intervalidID = setInterval(() => {
@@ -231,7 +358,21 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    let intervalidID = setInterval(() => {
+      fetchShowData().then(data => {
+        const name = data?.[0]?.activeshowname ?? "Unknown show";
+        setTitle(name)
+      })
+    }, 5000);
+    return () => clearInterval(intervalidID);
+  }, []);
+
+  useEffect(() => {
     if (micData && micData.length > 0) {
+      const first = micData[0];
+      //if (first && first.showTag) {
+      // setTitle(first.showTag);
+      //}
       setGrid(prev => {
         const updated = prev.map(rowArr => [...rowArr]);
         for (var x = 0; x < micData.length; x++) {
@@ -241,26 +382,20 @@ export default function App() {
           // TODO: Get proper formatting here.
 
           var previousStatus = null;
-          var audioCount = 0;
           const prevValue = prev[row][col];
           if (prevValue && Object.hasOwn(prevValue, 'status')) {
             previousStatus = prevValue.status;
           }
-          if (prevValue && Object.hasOwn(prevValue, 'noAudioCount')) {
-            audioCount = prevValue.noAudioCount;
-          }
-
-          const [finalStatus, statusLabel, finalCount] = handleNoAudios(previousStatus, mic.micstatus, audioCount);
 
           const value = {
             text: `micnumber: ${mic.micnumber}\nipaddress: ${mic.ipaddress}`,
-            status: finalStatus,
-            statusLabel: statusLabel,
+            status: mic.micstatus,
+            opstatus: mic.opstatus,
+            statusLabel: mic.micstatus,
             micnumber: mic.micnumber,
             ipaddress: mic.ipaddress,
             actors: mic.actors,
             details: detailsContent,
-            noAudioCount: finalCount,
             previousStatus: previousStatus
           }
           updated[row][col] = value;
@@ -276,7 +411,7 @@ export default function App() {
     setPanelOpen(true);
   };
 
-  
+
 
   return (
     // the parent div that holds all components
@@ -284,13 +419,15 @@ export default function App() {
       <table style={{ height: "100vh", width: "100vw", background: "#eef2f7" }}>
         <tbody>
           <tr>
+            <td style={{ textAlign: "center", paddingTop: 16 }}>
+              <h1 style={{ margin: 0 }}>
+                {title || "Loading…"}
+              </h1>
+            </td>
+          </tr>
+          <tr>
             <td style={{ textAlign: "center", padding: 24 }}>
-              <ToggleSwitch
-                label="Mic Check"
-                checked={micCheckEnabled}
-                onChange={setMicCheckEnabled}
-                clickHandler={handleClearAll}
-              />
+              <ModeSelector value={mode} onChange={setMode} />
             </td>
           </tr>
           <tr>
@@ -311,7 +448,7 @@ export default function App() {
                       row={row} col={col}
                       value={grid[row][col]}
                       onClick={handleCellClick}
-                      micCheckEnabled={micCheckEnabled}
+                      mode={mode}
                       onMicCheckRowToggle={handleMicCheckRowToggle}
                     />
                   )
