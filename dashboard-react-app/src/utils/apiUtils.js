@@ -1,15 +1,17 @@
 // The endpoint to get the mics
-const mic_api = "http://127.0.0.1:8000"
+// const mic_api = "http://127.0.0.1:8000"
+const mic_api = `http://${window.location.hostname}:8000`
+
 
 export async function fetchMicData() {
     try{
-        const response = await fetch(mic_api + "/test");
+        const response = await fetch(mic_api + "/mics");
         if(!response.ok) {
             throw new Error(`HTTP error: ${response.status}`)
         }
 
         const dataObj = await response.json();
-        return dataObj;
+        return dataObj.mics;
     } catch (error) {
         console.error('API error: ', error)
     }
@@ -17,13 +19,13 @@ export async function fetchMicData() {
 
 export async function fetchShowData() {
     try{
-        const response = await fetch(mic_api + "/title");
+        const response = await fetch(mic_api + "/shows");
         if(!response.ok) {
             throw new Error(`HTTP error: ${response.status}`)
         }
 
         const dataObj = await response.json();
-        return dataObj;
+        return dataObj.shows;
     } catch (error) {
         console.error('API error: ', error)
     }

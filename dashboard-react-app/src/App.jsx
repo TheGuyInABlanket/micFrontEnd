@@ -360,7 +360,7 @@ export default function App() {
   useEffect(() => {
     let intervalidID = setInterval(() => {
       fetchShowData().then(data => {
-        const name = data?.[0]?.activeshowname ?? "Unknown show";
+        const name = data?.activeshowname ?? "Unknown show";
         setTitle(name)
       })
     }, 5000);
@@ -415,19 +415,35 @@ export default function App() {
 
   return (
     // the parent div that holds all components
+    // dad, change the fontsize above Loading... to fit what you want
     <div>
       <table style={{ height: "100vh", width: "100vw", background: "#eef2f7" }}>
         <tbody>
           <tr>
             <td style={{ textAlign: "center", paddingTop: 16 }}>
-              <h1 style={{ margin: 0 }}>
+              <h1 style={{ margin: 0,  fontSize: "40px"}}>
                 {title || "Loading…"}
               </h1>
             </td>
           </tr>
           <tr>
-            <td style={{ textAlign: "center", padding: 24 }}>
+            <td style={{ textAlign: "center", padding: 24, paddingTop: 8, paddingBottom: 8}}>
               <ModeSelector value={mode} onChange={setMode} />
+              
+              {mode === "Mic Check" && (
+                <div style={{ marginTop: 12}}>
+                  <button
+                    onClick={handleClearAll}
+                    style={{
+                      padding: "8px 16px",
+                      fontSize: "16px",
+                      cursor: "pointer",
+                    }}
+                    >
+                      Clear All
+                    </button>
+                </div>
+              )}
             </td>
           </tr>
           <tr>
