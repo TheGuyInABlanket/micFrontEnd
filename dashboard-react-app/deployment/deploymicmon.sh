@@ -75,4 +75,25 @@ echo
 echo "Starting React UI..."
 
 cd "$REACT_PROJECT_PATH" || exit 1
-HOST=0.0.0.0 PORT="$REACT_PORT" npm run dev
+HOST=0.0.0.0 PORT="$REACT_PORT" npm run dev &
+REACT_PID=$!
+
+echo "React PID: $REACT_PID"
+echo "Waiting for React UI to start..."
+
+for i in {1..30}; do
+  if curl -s -o /dev/null "http://127.0.0.1:${REACT_PORT}"; then
+    break
+  fi
+  sleep 1
+done
+
+if ! curl -s -o /dev/null "http://127.0.0.1:${REACT_PORT}"; then
+  echo "React UI did not start in time" >&2
+  exit 1
+fi
+
+echo "Opening browser..."
+open "http://localhost:${REACT_PORT}"
+
+wait "$REACT_PID"
