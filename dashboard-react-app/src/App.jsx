@@ -203,7 +203,8 @@ function GridCell({ row, col, value, onClick, mode, onMicCheckRowToggle }) {
               return (
                 <label
                   key={idx}
-                  style={{ display: "flex", alignItems: "center", minHeight: 24 }}
+                  style={{ display: "flex", alignItems: "center", minHeight: 24, cursor: actor ? "pointer" : "default" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <input
                     style={{ marginLeft: 8 }}
@@ -421,17 +422,17 @@ export default function App() {
         <tbody>
           <tr>
             <td style={{ textAlign: "center", paddingTop: 16 }}>
-              <h1 style={{ margin: 0,  fontSize: "40px"}}>
+              <h1 style={{ margin: 0, fontSize: "40px" }}>
                 {title || "Loading…"}
               </h1>
             </td>
           </tr>
           <tr>
-            <td style={{ textAlign: "center", padding: 24, paddingTop: 8, paddingBottom: 8}}>
+            <td style={{ textAlign: "center", padding: 24, paddingTop: 8, paddingBottom: 8 }}>
               <ModeSelector value={mode} onChange={setMode} />
-              
+
               {mode === "Mic Check" && (
-                <div style={{ marginTop: 12}}>
+                <div style={{ marginTop: 12 }}>
                   <button
                     onClick={handleClearAll}
                     style={{
@@ -439,9 +440,9 @@ export default function App() {
                       fontSize: "16px",
                       cursor: "pointer",
                     }}
-                    >
-                      Clear All
-                    </button>
+                  >
+                    Clear All
+                  </button>
                 </div>
               )}
             </td>
