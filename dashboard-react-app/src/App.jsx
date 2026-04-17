@@ -15,11 +15,11 @@ const noAudioStatus = "No Audio"
 
 function getMicColor(status) {
   var color = "white";
-  if (status == "Offline" || status == "No RF") {
+  if (status == "No RF") {
     color = "LightCoral";
     // Removing no audio status
-    //} //else if (status == noAudioStatus) {
-    //color = "skyblue";
+  } else if (status == "Offline") {
+    color = "skyblue";
   } else if (status == "Low Battery") {
     color = "yellow";
   } else if (status == "Good") {
@@ -32,22 +32,34 @@ function getMicColor(status) {
 function getOperationStatusColor(status) {
   const noaudiolive = "white"
   const audiolive = "yellow"
-  const noaudio = "blue"
+  const noaudio = "lightblue"
   const overdrive = "red"
   const other = "#E1BEE7"
   var color = "white"
   var msg = ""
 
-  if (status === 7) {
+  if (status === 7 ) {
     color = noaudiolive
     msg = "Muted"
-  } else if (status === 4) {
+  } else if (status === 15 ) {
+    color = noaudiolive
+    msg = "Muted"
+  } else if (status === 3) {
     color = audiolive
     msg = "Live"
-  } else if (status === 5) {
+  } else if (status === 11) {
+    color = audiolive
+    msg = "Live"
+  } else if (status === 4) {
+    color = noaudio
+    msg = "No Audio"
+  } else if (status === 12) {
     color = noaudio
     msg = "No Audio"
   } else if (status === 1) {
+    color = overdrive
+    msg = "Overdrive"
+  } else if (status === 9) {
     color = overdrive
     msg = "Overdrive"
   } else {
@@ -417,12 +429,12 @@ export default function App() {
   return (
     // the parent div that holds all components
     // dad, change the fontsize above Loading... to fit what you want
-    <div>
+    <div style={{ color: "#111"}}> 
       <table style={{ height: "100vh", width: "100vw", background: "#eef2f7" }}>
         <tbody>
           <tr>
             <td style={{ textAlign: "center", paddingTop: 16 }}>
-              <h1 style={{ margin: 0, fontSize: "40px" }}>
+              <h1 style={{ margin: 0, fontSize: "20px" }}>
                 {title || "Loading…"}
               </h1>
             </td>
