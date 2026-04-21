@@ -18,6 +18,8 @@ function getMicColor(status) {
   if (status == "No RF") {
     color = "LightCoral";
     // Removing no audio status
+  } else if (status == "RF Off") {
+    color = "red";
   } else if (status == "Offline") {
     color = "skyblue";
   } else if (status == "Low Battery") {
