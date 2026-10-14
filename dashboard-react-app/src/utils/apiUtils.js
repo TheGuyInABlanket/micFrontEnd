@@ -25,10 +25,49 @@ export async function fetchShowData() {
         }
 
         const dataObj = await response.json();
-        return dataObj.shows;
+        return dataObj;
+        //return dataObj.shows;
     } catch (error) {
         console.error('API error: ', error)
     }
+}
+
+export async function postShowConfiguration(jsonObj) {
+  const response = await fetch(mic_api + "/shows", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(jsonObj),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+
+    throw new Error(
+      `Saving shows failed (${response.status}): ${errorBody}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function postActiveShow(showNumber) {
+  const response = await fetch(mic_api + "/activate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      activateshow: Number(showNumber),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+
+    throw new Error(
+      `Activating show failed (${response.status}): ${errorBody}`
+    );
+  }
+
+  return response.json();
 }
 
 export async function startMicData() {
